@@ -30,6 +30,7 @@
 
 body {
   margin: 0;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--text);
   font: 15px/1.6 "Noto Sans TC", -apple-system, "Segoe UI", system-ui, sans-serif;
@@ -116,10 +117,12 @@ header p {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 110px;
+  /* min-width:0 才讓 flex item 縮得下去，不然窄螢幕會被輸入框撐爆版 */
+  flex: 1 1 130px;
+  min-width: 0;
 }
 
-.field.grow { flex: 1; min-width: 160px; }
+.field.grow { flex: 2 1 180px; }
 
 .field label {
   font-size: 12px;
@@ -127,7 +130,9 @@ header p {
 }
 
 .field input, .field select {
-  padding: 7px 9px;
+  /* 16px 以下 iOS Safari 一 focus 就會自動放大整頁 */
+  font-size: 16px;
+  padding: 9px 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
@@ -179,7 +184,9 @@ th {
 
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
-.scroll { max-height: 380px; overflow-y: auto; }
+/* 欄位多的表格在手機上橫向捲，不要把整頁撐寬 */
+.scroll { max-height: 380px; overflow: auto; }
+.scroll table { min-width: 520px; }
 
 .empty { color: var(--muted); font-size: 13px; padding: 12px 0; }
 
@@ -213,5 +220,20 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .toolbar .spacer { flex: 1; }
 
 .chart-wrap { position: relative; height: 340px; }
+
+@media (max-width: 560px) {
+  .app { padding: 16px 12px 48px; }
+
+  /* 手機上「儲存」獨佔一行，不跟輸入框擠 */
+  .row > .btn { flex: 1 1 100%; padding: 12px 16px; }
+
+  .tabs button { flex: 1; padding: 10px 4px; text-align: center; }
+
+  .toolbar h2 { flex: 1 1 100%; }
+
+  .chart-wrap { height: 260px; }
+
+  .stats { grid-template-columns: 1fr 1fr; }
+}
 
 .note { font-size: 13px; color: var(--muted); line-height: 1.7; }
