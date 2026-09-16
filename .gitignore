@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+.env.local
+.DS_Store
+*.log
+
+# 個人健檢資料，不進 public repo
+健檢行動表.html
+減重計畫.html

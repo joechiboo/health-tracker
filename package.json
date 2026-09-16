@@ -1,0 +1,25 @@
+{
+  "name": "health-tracker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "體重與晨跑記錄，折線圖趨勢與相關性分析",
+  "author": "joechiboo",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "chart.js": "^4.4.4",
+    "vue": "^3.5.10"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.4",
+    "gh-pages": "^6.1.1",
+    "vite": "^5.4.8"
+  }
+}
