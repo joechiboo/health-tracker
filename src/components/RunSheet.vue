@@ -1,10 +1,33 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { state, saveEntry, deleteEntry } from '../lib/store'
 import { toCsv, download, today } from '../utils/csv'
 
-const form = ref({ ran_on: today(), distance_km: '', duration_min: '', note: '' })
+const DEFAULT_RUN = { distance_km: 2, duration_min: 20 } // 還沒有任何記錄時的起始值
+
+// 晨跑的量通常固定，預填上一次跑的，有出入再改
+const lastRun = () => {
+  const r = state.runs[state.runs.length - 1]
+  if (!r) return { ...DEFAULT_RUN }
+  return {
+    distance_km: Number(r.distance_km),
+    duration_min: r.duration_min == null ? DEFAULT_RUN.duration_min : Number(r.duration_min),
+  }
+}
+
+const blank = () => ({ ran_on: today(), ...lastRun(), note: '' })
+
+const form = ref(blank())
 const saving = ref(false)
+const touched = ref(false) // 使用者動過輸入框後就別再覆蓋他打的字
+
+// 資料是 mount 後才載回來的，載到時補上預填值
+watch(
+  () => state.runs.length,
+  () => {
+    if (!touched.value) Object.assign(form.value, lastRun())
+  }
+)
 
 // 配速：分/公里
 function pace(row) {
@@ -25,10 +48,14 @@ async function submit() {
     note: form.value.note || null,
   })
   saving.value = false
-  if (ok) form.value = { ran_on: today(), distance_km: '', duration_min: '', note: '' }
+  if (ok) {
+    touched.value = false
+    form.value = blank()
+  }
 }
 
 function edit(row) {
+  touched.value = true
   form.value = {
     ran_on: row.ran_on,
     distance_km: row.distance_km,
@@ -63,11 +90,26 @@ const totalKm = computed(() => state.runs.reduce((a, r) => a + Number(r.distance
         </div>
         <div class="field">
           <label>距離 (km)</label>
-          <input v-model="form.distance_km" type="number" step="0.1" min="0" required placeholder="5.0" />
+          <input
+          v-model="form.distance_km"
+          type="number"
+          step="0.1"
+          min="0"
+          required
+          placeholder="2.0"
+          @input="touched = true"
+        />
         </div>
         <div class="field">
           <label>時間 (分)．選填</label>
-          <input v-model="form.duration_min" type="number" step="0.5" min="0" placeholder="32" />
+          <input
+          v-model="form.duration_min"
+          type="number"
+          step="0.5"
+          min="0"
+          placeholder="20"
+          @input="touched = true"
+        />
         </div>
         <div class="field grow">
           <label>備註．選填</label>

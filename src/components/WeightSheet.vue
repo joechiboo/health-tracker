@@ -1,10 +1,27 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { state, saveEntry, deleteEntry } from '../lib/store'
 import { toCsv, download, today } from '../utils/csv'
 
-const form = ref({ measured_on: today(), weight_kg: '', body_fat: '', note: '' })
+const DEFAULT_WEIGHT = 87 // 還沒有任何記錄時的起始值
+
+// 每天體重不會差多少，預填最近一筆，改個小數點就好
+const lastWeight = () =>
+  state.weights.length ? Number(state.weights[state.weights.length - 1].weight_kg) : DEFAULT_WEIGHT
+
+const blank = () => ({ measured_on: today(), weight_kg: lastWeight(), body_fat: '', note: '' })
+
+const form = ref(blank())
 const saving = ref(false)
+const touched = ref(false) // 使用者動過輸入框後就別再覆蓋他打的字
+
+// 資料是 mount 後才載回來的，載到時補上預填值
+watch(
+  () => state.weights.length,
+  () => {
+    if (!touched.value) form.value.weight_kg = lastWeight()
+  }
+)
 
 async function submit() {
   if (!form.value.measured_on || !form.value.weight_kg) return
@@ -16,10 +33,14 @@ async function submit() {
     note: form.value.note || null,
   })
   saving.value = false
-  if (ok) form.value = { measured_on: today(), weight_kg: '', body_fat: '', note: '' }
+  if (ok) {
+    touched.value = false
+    form.value = blank()
+  }
 }
 
 function edit(row) {
+  touched.value = true
   form.value = {
     measured_on: row.measured_on,
     weight_kg: row.weight_kg,
@@ -53,7 +74,15 @@ const desc = () => [...state.weights].reverse()
         </div>
         <div class="field">
           <label>體重 (kg)</label>
-          <input v-model="form.weight_kg" type="number" step="0.1" min="0" required placeholder="68.5" />
+          <input
+          v-model="form.weight_kg"
+          type="number"
+          step="0.1"
+          min="0"
+          required
+          placeholder="87.0"
+          @input="touched = true"
+        />
         </div>
         <div class="field">
           <label>體脂 (%)．選填</label>
