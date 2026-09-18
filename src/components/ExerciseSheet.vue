@@ -4,6 +4,7 @@ import { state, saveEntry, deleteEntry } from '../lib/store'
 import { toCsv, download, today } from '../utils/csv'
 
 const SPORTS = ['跑步', '快走', '打球', '健身', '騎車', '游泳', '其他']
+const DISTANCE_SPORTS = ['跑步', '快走', '騎車', '游泳'] // 其他項目（打球、健身…）沒距離可記
 const DEFAULT_EXERCISE = { sport: '跑步', duration_min: 30, distance_km: '' } // 還沒有任何記錄時的起始值
 
 // 運動習慣通常固定，預填上一次的項目與時間，有出入再改
@@ -28,6 +29,14 @@ watch(
   () => state.exercises.length,
   () => {
     if (!touched.value) Object.assign(form.value, lastExercise())
+  }
+)
+
+// 換成沒距離可記的項目時，把預填帶過來的距離清掉（打球記 2 km 很怪）
+watch(
+  () => form.value.sport,
+  (sport) => {
+    if (!DISTANCE_SPORTS.includes(sport)) form.value.distance_km = ''
   }
 )
 
@@ -81,6 +90,7 @@ function exportCsv() {
 }
 
 const desc = computed(() => [...state.exercises].reverse())
+const hasDistance = computed(() => DISTANCE_SPORTS.includes(form.value.sport))
 const totalMin = computed(() => state.exercises.reduce((a, r) => a + Number(r.duration_min || 0), 0))
 const totalHours = computed(() => (totalMin.value / 60).toFixed(1))
 </script>
@@ -127,7 +137,7 @@ const totalHours = computed(() => (totalMin.value / 60).toFixed(1))
             type="number"
             step="0.1"
             min="0"
-            placeholder="跑步、騎車才填"
+            :placeholder="hasDistance ? '2.0' : '這個項目不用填'"
             @input="touched = true"
           />
         </div>
