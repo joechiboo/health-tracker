@@ -10,7 +10,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist",
+    "check:env": "node scripts/check-env.mjs",
+    "deploy": "npm run check:env && npm run build && gh-pages -d dist",
+    "deploy:offline": "npm run build && gh-pages -d dist",
     "check:supabase": "node scripts/check-supabase.mjs"
   },
   "dependencies": {

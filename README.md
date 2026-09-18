@@ -51,6 +51,10 @@ npm run deploy
 
 網址：https://joechiboo.github.io/health-tracker/
 
+⚠️ **一定要在有 `.env` 的機器上發佈**——Vite 是 build 當下把 `VITE_SUPABASE_*` 寫死進 bundle 的，
+在沒有 `.env` 的機器（CI、雲端容器）build 出來的網站會變成離線模式，資料只存在使用者自己的瀏覽器。
+`npm run deploy` 前會先跑 `npm run check:env` 擋這件事；真的要發佈離線版就用 `npm run deploy:offline`。
+
 ## 怎麼看相關係數
 
 `r` 介於 -1 到 1，負值代表「動越多、體重越低」。
