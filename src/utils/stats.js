@@ -28,16 +28,18 @@ export function describeR(r) {
   return { label: `${strength}${dir}相關`, tone: r < 0 ? 'good' : 'warn' }
 }
 
-// 把所有出現過的日期補成連續日曆，方便對齊兩個序列
+// 把所有出現過的日期補成連續日曆，方便對齊兩個序列。
+// 一律用 UTC 進出：'…T00:00:00' 會被當成「本地」午夜，再用 toISOString() 輸出就變回 UTC，
+// 在 UTC+8 會整條軸退一天（最新一筆還會被切掉）。加 Z 解析、用 UTC 加天數就不會跟時區打架。
 export function dateRange(dates) {
   if (!dates.length) return []
   const sorted = [...dates].sort()
   const out = []
-  const cur = new Date(sorted[0] + 'T00:00:00')
-  const end = new Date(sorted[sorted.length - 1] + 'T00:00:00')
+  const cur = new Date(sorted[0] + 'T00:00:00Z')
+  const end = new Date(sorted[sorted.length - 1] + 'T00:00:00Z')
   while (cur <= end) {
     out.push(cur.toISOString().slice(0, 10))
-    cur.setDate(cur.getDate() + 1)
+    cur.setUTCDate(cur.getUTCDate() + 1)
   }
   return out
 }
