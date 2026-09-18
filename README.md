@@ -51,7 +51,12 @@ npm run deploy
 
 網址：https://joechiboo.github.io/health-tracker/
 
-⚠️ **一定要在有 `.env` 的機器上發佈**——Vite 是 build 當下把 `VITE_SUPABASE_*` 寫死進 bundle 的，
+也可以交給 GitHub Actions：push 到 `main` 就自動 build 並更新 `gh-pages`
+（[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)），或到 Actions 頁面手動觸發。
+前置作業只有一次——**Settings → Secrets and variables → Actions → New repository secret**
+加上 `VITE_SUPABASE_URL` 與 `VITE_SUPABASE_ANON_KEY`（沒加的話 job 會失敗，不會發出離線版）。
+
+⚠️ **手動發佈時一定要在有 `.env` 的機器上**——Vite 是 build 當下把 `VITE_SUPABASE_*` 寫死進 bundle 的，
 在沒有 `.env` 的機器（CI、雲端容器）build 出來的網站會變成離線模式，資料只存在使用者自己的瀏覽器。
 `npm run deploy` 前會先跑 `npm run check:env` 擋這件事；真的要發佈離線版就用 `npm run deploy:offline`。
 
