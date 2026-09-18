@@ -19,18 +19,32 @@ create table if not exists health.weights (
   created_at  timestamptz not null default now()
 );
 
--- ── 晨跑 ────────────────────────────────────────────────
-create table if not exists health.runs (
+-- ── 運動 ────────────────────────────────────────────────
+-- 舊版只記晨跑（health.runs），現在改成所有運動項目：
+-- 時間（分鐘）是打球、健身、跑步共通的單位，改當必填；距離只有跑步、騎車才有，改成選填。
+do $$
+begin
+  if to_regclass('health.runs') is not null and to_regclass('health.exercises') is null then
+    alter table health.runs rename to exercises;
+    alter table health.exercises rename column ran_on to done_on;
+    alter table health.exercises add column if not exists sport text not null default '跑步';
+    alter table health.exercises alter column distance_km drop not null;
+    drop index if exists health.runs_ran_on_idx;
+  end if;
+end $$;
+
+create table if not exists health.exercises (
   id          bigint generated always as identity primary key,
-  ran_on      date        not null unique,          -- 一天一筆
-  distance_km numeric(5,2) not null check (distance_km >= 0),
+  done_on     date        not null unique,          -- 一天一筆
+  sport       text        not null default '跑步',  -- 跑步／打球／健身…
   duration_min numeric(5,1) check (duration_min >= 0),
+  distance_km numeric(5,2) check (distance_km >= 0), -- 選填，跑步、騎車才有
   note        text,
   created_at  timestamptz not null default now()
 );
 
 create index if not exists weights_measured_on_idx on health.weights (measured_on desc);
-create index if not exists runs_ran_on_idx on health.runs (ran_on desc);
+create index if not exists exercises_done_on_idx on health.exercises (done_on desc);
 
 -- ── 讓 PostgREST 的 anon 角色進得來 ──────────────────────
 grant usage on schema health to anon, authenticated;
@@ -46,14 +60,15 @@ alter default privileges in schema health
 -- 之後要加 Supabase Auth 時，把 to anon 改成 to authenticated，
 -- 並在兩張表加 user_id uuid default auth.uid()，policy 條件改 user_id = auth.uid()。
 alter table health.weights enable row level security;
-alter table health.runs    enable row level security;
+alter table health.exercises enable row level security;
 
 drop policy if exists "anon full access on weights" on health.weights;
 create policy "anon full access on weights"
   on health.weights for all to anon
   using (true) with check (true);
 
-drop policy if exists "anon full access on runs" on health.runs;
-create policy "anon full access on runs"
-  on health.runs for all to anon
+drop policy if exists "anon full access on runs" on health.exercises;
+drop policy if exists "anon full access on exercises" on health.exercises;
+create policy "anon full access on exercises"
+  on health.exercises for all to anon
   using (true) with check (true);

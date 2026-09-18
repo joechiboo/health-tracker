@@ -36,7 +36,7 @@ const supabase = createClient(url, key, { db: { schema: 'health' } })
 
 const checks = [
   { table: 'weights', dateKey: 'measured_on', row: { measured_on: SENTINEL_DATE, weight_kg: 60 } },
-  { table: 'runs', dateKey: 'ran_on', row: { ran_on: SENTINEL_DATE, distance_km: 1 } },
+  { table: 'exercises', dateKey: 'done_on', row: { done_on: SENTINEL_DATE, sport: '測試', duration_min: 1 } },
 ]
 
 let ok = true

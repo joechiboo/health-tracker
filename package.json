@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "體重與晨跑記錄，折線圖趨勢與相關性分析",
+  "description": "體重與運動記錄，折線圖趨勢與相關性分析",
   "author": "joechiboo",
   "license": "MIT",
   "scripts": {

@@ -1,4 +1,4 @@
-// 體重／跑步的統計工具：都吃 {date, value} 形式的序列
+// 體重／運動的統計工具：都吃 {date, value} 形式的序列
 
 export function pearson(xs, ys) {
   const n = xs.length
@@ -42,7 +42,7 @@ export function dateRange(dates) {
   return out
 }
 
-// 過去 window 天（含當天）的總和；沒跑的日子算 0
+// 過去 window 天（含當天）的總和；沒運動的日子算 0
 export function rollingSum(map, dates, window) {
   return dates.map((_, i) => {
     let sum = 0
@@ -68,18 +68,19 @@ export function rollingMean(map, dates, window) {
 }
 
 /**
- * 跑量與體重的關聯分析。
- * weights: [{measured_on, weight_kg}]，runs: [{ran_on, distance_km}]
+ * 運動量與體重的關聯分析。運動量一律用「時間（分鐘）」衡量——
+ * 打球、健身這些沒有距離可算，只有時間是所有項目共通的單位。
+ * weights: [{measured_on, weight_kg}]，exercises: [{done_on, duration_min}]
  */
-export function analyze(weights, runs) {
+export function analyze(weights, exercises) {
   const wMap = new Map(weights.map((w) => [w.measured_on, Number(w.weight_kg)]))
-  const rMap = new Map(runs.map((r) => [r.ran_on, Number(r.distance_km)]))
-  const dates = dateRange([...wMap.keys(), ...rMap.keys()])
+  const eMap = new Map(exercises.map((e) => [e.done_on, Number(e.duration_min || 0)]))
+  const dates = dateRange([...wMap.keys(), ...eMap.keys()])
 
-  const week = rollingSum(rMap, dates, 7)
+  const week = rollingSum(eMap, dates, 7)
   const wAvg = rollingMean(wMap, dates, 7)
 
-  // 1) 近 7 天跑量 vs 當日 7 日平均體重
+  // 1) 近 7 天運動時間 vs 當日 7 日平均體重
   const xs1 = []
   const ys1 = []
   dates.forEach((d, i) => {
@@ -89,7 +90,7 @@ export function analyze(weights, runs) {
     }
   })
 
-  // 2) 近 7 天跑量 vs 「之後 7 天」的體重變化（跑步是否帶來後續下降）
+  // 2) 近 7 天運動時間 vs 「之後 7 天」的體重變化（運動是否帶來後續下降）
   const xs2 = []
   const ys2 = []
   dates.forEach((d, i) => {
@@ -100,18 +101,18 @@ export function analyze(weights, runs) {
     }
   })
 
-  const totalKm = runs.reduce((a, r) => a + Number(r.distance_km), 0)
+  const totalMin = exercises.reduce((a, e) => a + Number(e.duration_min || 0), 0)
   const first = weights[0] ? Number(weights[0].weight_kg) : null
   const last = weights.length ? Number(weights[weights.length - 1].weight_kg) : null
 
   return {
     dates,
-    weeklyKm: week,
+    weeklyMin: week,
     weightAvg: wAvg,
     sameDay: { r: pearson(xs1, ys1), n: xs1.length },
     lagged: { r: pearson(xs2, ys2), n: xs2.length },
-    totalKm,
-    runDays: runs.length,
+    totalMin,
+    exerciseDays: exercises.length,
     weightDays: weights.length,
     weightDelta: first != null && last != null ? last - first : null,
   }

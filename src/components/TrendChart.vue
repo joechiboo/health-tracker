@@ -5,18 +5,18 @@ import { state } from '../lib/store'
 import { dateRange, rollingMean } from '../utils/stats'
 import { today } from '../utils/csv'
 
-// 兩張圖上下並排、共用同一條時間軸；體重與公里數尺度不同，不共用 y 軸。
+// 兩張圖上下並排、共用同一條時間軸；體重與運動時間尺度不同，不共用 y 軸。
 const weightCanvas = ref(null)
-const runCanvas = ref(null)
+const exerciseCanvas = ref(null)
 const range = ref(90) // 0 = 全部
 let weightChart = null
-let runChart = null
+let exerciseChart = null
 let mq = null
 
 // dataviz 參考色盤（light / dark 各自選過）
 const THEME = {
-  light: { weight: '#2a78d6', avg: '#eb6834', run: '#1baf7a', surface: '#ffffff', text: '#1c2024', muted: '#6b7280', grid: '#e3e6ea' },
-  dark: { weight: '#3987e5', avg: '#d95926', run: '#199e70', surface: '#1d2126', text: '#e7eaee', muted: '#9aa3ad', grid: '#2d333b' },
+  light: { weight: '#2a78d6', avg: '#eb6834', exercise: '#1baf7a', surface: '#ffffff', text: '#1c2024', muted: '#6b7280', grid: '#e3e6ea' },
+  dark: { weight: '#3987e5', avg: '#d95926', exercise: '#199e70', surface: '#1d2126', text: '#e7eaee', muted: '#9aa3ad', grid: '#2d333b' },
 }
 
 const isDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -24,8 +24,8 @@ const palette = () => (isDark() ? THEME.dark : THEME.light)
 
 const series = computed(() => {
   const wMap = new Map(state.weights.map((w) => [w.measured_on, Number(w.weight_kg)]))
-  const rMap = new Map(state.runs.map((r) => [r.ran_on, Number(r.distance_km)]))
-  let dates = dateRange([...wMap.keys(), ...rMap.keys()])
+  const eMap = new Map(state.exercises.map((e) => [e.done_on, Number(e.duration_min || 0)]))
+  let dates = dateRange([...wMap.keys(), ...eMap.keys()])
   const avgAll = rollingMean(wMap, dates, 7)
 
   let avg = avgAll
@@ -38,7 +38,7 @@ const series = computed(() => {
     dates,
     weight: dates.map((d) => wMap.get(d) ?? null),
     avg,
-    run: dates.map((d) => rMap.get(d) ?? 0),
+    exercise: dates.map((d) => eMap.get(d) ?? 0),
   }
 })
 
@@ -85,7 +85,7 @@ function render() {
   const p = palette()
   const s = series.value
   weightChart?.destroy()
-  runChart?.destroy()
+  exerciseChart?.destroy()
   if (!hasData.value || !weightCanvas.value) return
 
   const wOpts = baseOptions(p, 'kg')
@@ -130,17 +130,17 @@ function render() {
     options: wOpts,
   })
 
-  const rOpts = baseOptions(p, 'km')
-  rOpts.scales.y.beginAtZero = true
-  runChart = new Chart(runCanvas.value, {
+  const eOpts = baseOptions(p, '分鐘')
+  eOpts.scales.y.beginAtZero = true
+  exerciseChart = new Chart(exerciseCanvas.value, {
     type: 'bar',
     data: {
       labels: s.dates,
       datasets: [
         {
-          label: '當日跑量',
-          data: s.run,
-          backgroundColor: p.run,
+          label: '當日運動時間',
+          data: s.exercise,
+          backgroundColor: p.exercise,
           borderRadius: 4,
           borderSkipped: false,
           barPercentage: 0.9,
@@ -148,16 +148,16 @@ function render() {
         },
       ],
     },
-    options: rOpts,
+    options: eOpts,
   })
 }
 
 // 把兩張圖拼成一張 PNG（Chart.js 的 canvas 是透明的，先鋪底色）
 function exportPng() {
-  if (!weightChart || !runChart) return
+  if (!weightChart || !exerciseChart) return
   const p = palette()
   const a = weightCanvas.value
-  const b = runCanvas.value
+  const b = exerciseCanvas.value
   const pad = 24
   const gap = 16
   const headH = 52
@@ -169,7 +169,7 @@ function exportPng() {
   ctx.fillRect(0, 0, out.width, out.height)
   ctx.fillStyle = p.text
   ctx.font = '600 20px "Noto Sans TC", system-ui, sans-serif'
-  ctx.fillText('體重與晨跑趨勢', pad, 30)
+  ctx.fillText('體重與運動趨勢', pad, 30)
   ctx.fillStyle = p.muted
   ctx.font = '13px "Noto Sans TC", system-ui, sans-serif'
   const s = series.value
@@ -195,7 +195,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   mq?.removeEventListener('change', render)
   weightChart?.destroy()
-  runChart?.destroy()
+  exerciseChart?.destroy()
 })
 
 watch([series, hasData], () => nextTick(render))
@@ -214,11 +214,11 @@ watch([series, hasData], () => nextTick(render))
       <button class="btn" :disabled="!hasData" @click="exportPng">匯出 PNG</button>
     </div>
 
-    <p v-if="!hasData" class="empty">先記幾筆體重或跑步，這裡就會畫出折線圖。</p>
+    <p v-if="!hasData" class="empty">先記幾筆體重或運動，這裡就會畫出折線圖。</p>
     <template v-else>
       <div class="chart-wrap"><canvas ref="weightCanvas"></canvas></div>
       <div class="chart-wrap" style="height: 200px; margin-top: 8px">
-        <canvas ref="runCanvas"></canvas>
+        <canvas ref="exerciseCanvas"></canvas>
       </div>
       <p class="note" style="margin-top: 10px">
         兩張圖共用同一條時間軸。體重看虛線的 7 日平均比較準——單日體重受水分影響大，

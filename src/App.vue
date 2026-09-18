@@ -2,14 +2,14 @@
 import { ref, onMounted } from 'vue'
 import { state, loadAll } from './lib/store'
 import WeightSheet from './components/WeightSheet.vue'
-import RunSheet from './components/RunSheet.vue'
+import ExerciseSheet from './components/ExerciseSheet.vue'
 import TrendChart from './components/TrendChart.vue'
 import AnalysisPanel from './components/AnalysisPanel.vue'
 
 const tab = ref('weight')
 const tabs = [
   { key: 'weight', label: '體重' },
-  { key: 'run', label: '晨跑' },
+  { key: 'exercise', label: '運動' },
   { key: 'trend', label: '趨勢圖' },
   { key: 'analysis', label: '相關性' },
 ]
@@ -21,7 +21,7 @@ onMounted(loadAll)
   <div class="app">
     <header>
       <h1>Health Tracker</h1>
-      <p>每天量一次體重、記一次晨跑，看看兩者到底有沒有關係。</p>
+      <p>每天量一次體重、記一次運動，看看兩者到底有沒有關係。</p>
     </header>
 
     <div v-if="state.offline" class="banner">
@@ -45,7 +45,7 @@ onMounted(loadAll)
     <p v-if="state.loading" class="empty">載入中…</p>
 
     <WeightSheet v-show="tab === 'weight'" />
-    <RunSheet v-show="tab === 'run'" />
+    <ExerciseSheet v-show="tab === 'exercise'" />
     <TrendChart v-if="tab === 'trend'" />
     <AnalysisPanel v-if="tab === 'analysis'" />
   </div>
