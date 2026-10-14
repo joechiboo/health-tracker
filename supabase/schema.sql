@@ -35,13 +35,27 @@ end $$;
 
 create table if not exists health.exercises (
   id          bigint generated always as identity primary key,
-  done_on     date        not null unique,          -- 一天一筆
+  done_on     date        not null,                 -- 一天可以多筆（早上跑、下午加練）
   sport       text        not null default '跑步',  -- 跑步／打球／健身…
   duration_min numeric(5,1) check (duration_min >= 0),
   distance_km numeric(5,2) check (distance_km >= 0), -- 選填，跑步、騎車才有
   note        text,
   created_at  timestamptz not null default now()
 );
+
+-- 舊版運動一天限一筆，拿掉 done_on 的唯一鍵（rename 過來的表約束名可能還叫 runs_ran_on_key）
+do $$
+declare c record;
+begin
+  for c in
+    select con.conname from pg_constraint con
+    join pg_attribute a on a.attrelid = con.conrelid and a.attnum = any(con.conkey)
+    where con.conrelid = 'health.exercises'::regclass and con.contype = 'u'
+      and a.attname = 'done_on' and array_length(con.conkey, 1) = 1
+  loop
+    execute format('alter table health.exercises drop constraint %I', c.conname);
+  end loop;
+end $$;
 
 create index if not exists weights_measured_on_idx on health.weights (measured_on desc);
 create index if not exists exercises_done_on_idx on health.exercises (done_on desc);

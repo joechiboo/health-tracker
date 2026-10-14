@@ -1,5 +1,12 @@
 // 體重／運動的統計工具：都吃 {date, value} 形式的序列
 
+// 一天可能有多筆運動，加總成「日期 → 當天總分鐘」
+export function minutesByDate(exercises) {
+  const m = new Map()
+  for (const e of exercises) m.set(e.done_on, (m.get(e.done_on) ?? 0) + Number(e.duration_min || 0))
+  return m
+}
+
 export function pearson(xs, ys) {
   const n = xs.length
   if (n < 3) return null
@@ -76,7 +83,7 @@ export function rollingMean(map, dates, window) {
  */
 export function analyze(weights, exercises) {
   const wMap = new Map(weights.map((w) => [w.measured_on, Number(w.weight_kg)]))
-  const eMap = new Map(exercises.map((e) => [e.done_on, Number(e.duration_min || 0)]))
+  const eMap = minutesByDate(exercises)
   const dates = dateRange([...wMap.keys(), ...eMap.keys()])
 
   const week = rollingSum(eMap, dates, 7)
@@ -114,7 +121,7 @@ export function analyze(weights, exercises) {
     sameDay: { r: pearson(xs1, ys1), n: xs1.length },
     lagged: { r: pearson(xs2, ys2), n: xs2.length },
     totalMin,
-    exerciseDays: exercises.length,
+    exerciseDays: eMap.size,
     weightDays: weights.length,
     weightDelta: first != null && last != null ? last - first : null,
   }

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { state, saveEntry, deleteEntry } from '../lib/store'
+import { state, addExercises, updateExercise, deleteExercise } from '../lib/store'
 import { toCsv, download, today } from '../utils/csv'
 
 const SPORTS = ['跑步', '快走', '打球', '健身', '騎車', '游泳', '其他']
@@ -22,6 +22,7 @@ const blank = () => ({ done_on: today(), ...lastExercise(), note: '' })
 
 const form = ref(blank())
 const saving = ref(false)
+const editingId = ref(null) // 有值＝正在改舊的那筆，沒值＝新增
 const touched = ref(false) // 使用者動過輸入框後就別再覆蓋他打的字
 
 // 資料是 mount 後才載回來的，載到時補上預填值
@@ -52,22 +53,25 @@ function pace(row) {
 async function submit() {
   if (!form.value.done_on || form.value.duration_min === '') return
   saving.value = true
-  const ok = await saveEntry('exercises', {
+  const row = {
     done_on: form.value.done_on,
     sport: form.value.sport || '其他',
     duration_min: Number(form.value.duration_min),
     distance_km: form.value.distance_km === '' ? null : Number(form.value.distance_km),
     note: form.value.note || null,
-  })
+  }
+  const ok = editingId.value ? await updateExercise(editingId.value, row) : await addExercises([row])
   saving.value = false
   if (ok) {
     touched.value = false
+    editingId.value = null
     form.value = blank()
   }
 }
 
 function edit(row) {
   touched.value = true
+  editingId.value = row.id
   form.value = {
     done_on: row.done_on,
     sport: row.sport ?? '其他',
@@ -98,7 +102,7 @@ const totalHours = computed(() => (totalMin.value / 60).toFixed(1))
 <template>
   <div>
     <div class="card">
-      <h2>記一次運動</h2>
+      <h2>{{ editingId ? '修改這筆運動' : '記一次運動' }}</h2>
       <form class="row" @submit.prevent="submit">
         <div class="field">
           <label>日期</label>
@@ -146,9 +150,10 @@ const totalHours = computed(() => (totalMin.value / 60).toFixed(1))
           <input v-model="form.note" type="text" placeholder="跟同事打，出很多汗" />
         </div>
         <button class="btn primary" :disabled="saving">{{ saving ? '儲存中…' : '儲存' }}</button>
+        <button v-if="editingId" type="button" class="btn" @click="(editingId = null), (form = blank())">取消</button>
       </form>
       <p class="note" style="margin-top: 10px">
-        沒運動的日子不用記，分析時會自動當 0 分鐘；同一天再存一次會覆蓋原本那筆。
+        沒運動的日子不用記，分析時會自動當 0 分鐘；同一天練兩次就記兩筆，分析時會加總。
       </p>
     </div>
 
@@ -174,7 +179,7 @@ const totalHours = computed(() => (totalMin.value / 60).toFixed(1))
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in desc" :key="row.done_on">
+            <tr v-for="row in desc" :key="row.id">
               <td>{{ row.done_on }}</td>
               <td>{{ row.sport ?? '—' }}</td>
               <td class="num">{{ row.duration_min ?? '—' }}</td>
@@ -183,7 +188,7 @@ const totalHours = computed(() => (totalMin.value / 60).toFixed(1))
               <td>{{ row.note ?? '' }}</td>
               <td class="num">
                 <button class="btn link" @click="edit(row)">編輯</button>
-                <button class="btn link" @click="deleteEntry('exercises', row)">刪除</button>
+                <button class="btn link" @click="deleteExercise(row.id)">刪除</button>
               </td>
             </tr>
           </tbody>

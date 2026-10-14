@@ -1,13 +1,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { state, loadAll } from './lib/store'
+import YearSummary from './components/YearSummary.vue'
 import WeightSheet from './components/WeightSheet.vue'
 import ExerciseSheet from './components/ExerciseSheet.vue'
 import TrendChart from './components/TrendChart.vue'
 import AnalysisPanel from './components/AnalysisPanel.vue'
 
-const tab = ref('weight')
+const tab = ref('year')
 const tabs = [
+  { key: 'year', label: '今年' },
   { key: 'weight', label: '體重' },
   { key: 'exercise', label: '運動' },
   { key: 'trend', label: '趨勢圖' },
@@ -44,6 +46,7 @@ onMounted(loadAll)
 
     <p v-if="state.loading" class="empty">載入中…</p>
 
+    <YearSummary v-show="tab === 'year'" />
     <WeightSheet v-show="tab === 'weight'" />
     <ExerciseSheet v-show="tab === 'exercise'" />
     <TrendChart v-if="tab === 'trend'" />
