@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import Chart from 'chart.js/auto'
 import { state } from '../lib/store'
-import { dateRange, rollingMean } from '../utils/stats'
+import { dateRange, rollingMean, minutesByDate } from '../utils/stats'
 import { today } from '../utils/csv'
 
 // 兩張圖上下並排、共用同一條時間軸；體重與運動時間尺度不同，不共用 y 軸。
@@ -24,7 +24,7 @@ const palette = () => (isDark() ? THEME.dark : THEME.light)
 
 const series = computed(() => {
   const wMap = new Map(state.weights.map((w) => [w.measured_on, Number(w.weight_kg)]))
-  const eMap = new Map(state.exercises.map((e) => [e.done_on, Number(e.duration_min || 0)]))
+  const eMap = minutesByDate(state.exercises)
   let dates = dateRange([...wMap.keys(), ...eMap.keys()])
   const avgAll = rollingMean(wMap, dates, 7)
 

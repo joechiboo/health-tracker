@@ -57,7 +57,11 @@ for (const { table, dateKey, row } of checks) {
   }
   console.log(`  ✓ 讀取 OK（目前 ${sel.data.length ? '有' : '沒有'}資料）`)
 
-  const ins = await supabase.from(table).upsert(row, { onConflict: dateKey })
+  // 運動一天可多筆、沒有日期唯一鍵，只能 insert；哨兵資料最後會依日期整批刪掉
+  const ins =
+    table === 'exercises'
+      ? await supabase.from(table).insert(row)
+      : await supabase.from(table).upsert(row, { onConflict: dateKey })
   if (ins.error) {
     ok = false
     console.error(`  ✗ 寫入失敗：${ins.error.message}`)

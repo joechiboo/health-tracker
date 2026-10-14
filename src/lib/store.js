@@ -55,9 +55,13 @@ export const isOffline = computed(() => state.offline)
 async function fetchAll(name) {
   const { table, dateKey } = TABLES[name]
   if (state.offline) {
-    return readLocal(name).sort((a, b) => a[dateKey].localeCompare(b[dateKey]))
+    return readLocal(name).sort((a, b) => a[dateKey].localeCompare(b[dateKey]) || a.id - b.id)
   }
-  const { data, error } = await supabase.from(table).select('*').order(dateKey, { ascending: true })
+  const { data, error } = await supabase
+    .from(table)
+    .select('*')
+    .order(dateKey, { ascending: true })
+    .order('id', { ascending: true })
   if (error) throw error
   return data
 }
@@ -76,7 +80,7 @@ export async function loadAll() {
   }
 }
 
-// 一天一筆：同日期覆蓋（upsert on 日期欄位）
+// 體重一天一筆：同日期覆蓋（upsert on 日期欄位）
 export async function saveEntry(name, row) {
   const { table, dateKey } = TABLES[name]
   state.error = ''
@@ -111,4 +115,56 @@ export async function deleteEntry(name, row) {
   } catch (e) {
     state.error = e.message || String(e)
   }
+}
+
+// ── 運動：一天可以有多筆（早上跑步、下午加練），用 id 區分 ─────────────
+
+async function runExercises(fn) {
+  state.error = ''
+  try {
+    await fn()
+    state.exercises = await fetchAll('exercises')
+    return true
+  } catch (e) {
+    state.error = e.message || String(e)
+    return false
+  }
+}
+
+let localSeq = 0
+const localId = () => Date.now() * 1000 + (localSeq++ % 1000)
+
+// 新增一或多筆
+export function addExercises(rows) {
+  return runExercises(async () => {
+    if (!rows.length) return
+    if (state.offline) {
+      writeLocal('exercises', [...readLocal('exercises'), ...rows.map((r) => ({ ...r, id: localId() }))])
+    } else {
+      const { error } = await supabase.from('exercises').insert(rows)
+      if (error) throw error
+    }
+  })
+}
+
+export function updateExercise(id, row) {
+  return runExercises(async () => {
+    if (state.offline) {
+      writeLocal('exercises', readLocal('exercises').map((r) => (r.id === id ? { ...r, ...row, id } : r)))
+    } else {
+      const { error } = await supabase.from('exercises').update(row).eq('id', id)
+      if (error) throw error
+    }
+  })
+}
+
+export function deleteExercise(id) {
+  return runExercises(async () => {
+    if (state.offline) {
+      writeLocal('exercises', readLocal('exercises').filter((r) => r.id !== id))
+    } else {
+      const { error } = await supabase.from('exercises').delete().eq('id', id)
+      if (error) throw error
+    }
+  })
 }
