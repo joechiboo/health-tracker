@@ -187,6 +187,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 /* 欄位多的表格在手機上橫向捲，不要把整頁撐寬 */
 .scroll { max-height: 380px; overflow: auto; }
 .scroll table { min-width: 520px; }
+.scroll th, .scroll td { white-space: nowrap; }
 
 .empty { color: var(--muted); font-size: 13px; padding: 12px 0; }
 
