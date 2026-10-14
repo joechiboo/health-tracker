@@ -138,10 +138,10 @@ async function runImport() {
 <template>
   <div>
     <div class="card">
-      <div class="toolbar">
-        <button class="btn" @click="year--">‹</button>
-        <h2 style="margin: 0">{{ year }} 年累積</h2>
-        <button class="btn" :disabled="year >= thisYear" @click="year++">›</button>
+      <div class="year-nav">
+        <button class="btn" aria-label="前一年" @click="year--">‹</button>
+        <h2>{{ year }} 年累積</h2>
+        <button class="btn" aria-label="下一年" :disabled="year >= thisYear" @click="year++">›</button>
       </div>
       <div class="goal">
         <div class="goal-head">
@@ -161,7 +161,7 @@ async function runImport() {
           <template v-else>；已達標 🎉</template>
         </p>
       </div>
-      <div class="stats">
+      <div class="stats year-stats">
         <div class="stat">
           <div class="k">次數</div>
           <div class="v">{{ summary.count }}</div>
@@ -243,6 +243,16 @@ async function runImport() {
 </template>
 
 <style scoped>
+.year-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.year-nav h2 { margin: 0; flex: 1; text-align: center; }
+.year-nav .btn { padding: 6px 14px; }
+.year-nav .btn:disabled { opacity: 0.35; cursor: default; }
+.year-stats { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 560px) {
+  .year-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .year-stats .stat { padding: 10px 8px; }
+  .year-stats .v { font-size: 18px; }
+}
 .goal { margin-bottom: 16px; }
 .goal-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; }
 .goal-head .btn.link { color: var(--accent); }
